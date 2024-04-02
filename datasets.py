@@ -41,8 +41,8 @@ def _filter_datasets(possible_datasets: list[str], user_query: str) -> list[str]
     
     str_possible_datasets = ", ".join(possible_datasets)
     llm_filtering_request = "\n".join(("Query:", 
-                             user_query,
-                             "",
+                            user_query,
+                            "",
                             "I would like to know which of the following categories most likely contains the answer to the user's query:",str_possible_datasets,
                             "",
                             "Your response should be a comma seperated list of categories and nothing else"))
