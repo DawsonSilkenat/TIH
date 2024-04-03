@@ -46,6 +46,8 @@ def _filter_datasets(possible_datasets: list[str], user_query: str) -> list[str]
                             "I would like to know which of the following categories most likely contains the answer to the user's query:",str_possible_datasets,
                             "",
                             "Your response should be a comma seperated list of categories and nothing else"))
+    
+    print(llm_filtering_request)
     filtering_response = llm_functions.generate_llm_response(llm_filtering_request)
     
     # TODO there will likely need to be some processing here which converts back to a list of strings.

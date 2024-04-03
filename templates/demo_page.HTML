@@ -1,0 +1,33 @@
+<html lang="en">
+<head>
+    <title>TIH LLM Demo</title>
+    <style>
+        .center {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; 
+            align-items: center; 
+
+            border: 1px solid black;
+        }
+        .response {
+            border: 1px solid red;
+            width: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="center">
+        <form action="/" method="post">
+            <label for="user_input">Enter your query:</label><br>
+            <textarea id="user_input" name="user_input" rows="4" cols="50"></textarea><br>
+            <input type="submit" value="Submit">
+        </form>
+        {% if llm_answer %}
+        <div class="response">
+            <p>{{ llm_answer }}</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

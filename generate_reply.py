@@ -7,6 +7,7 @@ def process_api_responses(user_query: str, api_responses: list[dict[str, any]]) 
     # What we consider useful may change over time, and this processing step might need to move to the api_endpoint_functions if it depends significantly on the api used
     
     api_responses = [_format_api_response(response) for response in api_responses]
+    print(api_responses)
     
     llm_api_processing_request = "\n".join(("Query:", 
                             user_query,
