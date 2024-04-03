@@ -2,8 +2,17 @@ from datasets import get_datasets
 from keywords import get_query_keywords
 from api_endpoint_functions.multiple_datasets import multiple_datasets_by_keywords
 from generate_reply import process_api_responses
+from flask import Flask, render_template, request
+import json
 
-def handle_query(user_query: str, tih_api_key: str) -> str:
+# Creating the app and loading api keys 
+app = Flask(__name__)
+with open("api_keys.json", "r") as file:
+    tih_api_key = json.load(file)["TIH"]
+
+
+app.route("/", methods=["GET", "POST"])
+def handle_query(user_query: str) -> str:
     """Entry point, taking a user's query as raw text, processing to find the correct api calls, and returning the result of those calls
 
     Args:
@@ -28,13 +37,6 @@ def handle_query(user_query: str, tih_api_key: str) -> str:
     return llm_recommendations
     
     
-    
 
 if __name__ == "__main__":
-    import json
-
-    with open("api_keys.json", "r") as file:
-        tih_api_key = json.load(file)["TIH"]
-        
-    llm_recommendations = handle_query(None, tih_api_key)
-    print(llm_recommendations)
+    app.run()
