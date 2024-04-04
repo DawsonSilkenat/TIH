@@ -29,13 +29,15 @@ def handle_query():
         # For now I am using just the Search Multiple Datasets By Keyword endpoint
         # This is the simplest, least work method. I would also like to look at doing each endpoint individually, but not MVP 
         # Concern: Even though this may pull from multiple datasets, I don't think there is any reason to expect it will
-        api_responses = multiple_datasets_by_keywords(user_query, datasets, tih_api_key, keywords)
+        api_responses = multiple_datasets_by_keywords(user_query, datasets, tih_api_key, keywords, 25)
     
         # Here would be the place to look at deals, augment the information provided to the llm
     
         # Once we have the api responce we need the llm to process the response 
         llm_recommendations = process_api_responses(user_query, api_responses)
-    
+        
+        print(llm_recommendations)
+        
     
     return render_template("demo_page.html", user_query=user_query, llm_answer=llm_recommendations)
     

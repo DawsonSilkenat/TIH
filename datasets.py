@@ -52,6 +52,6 @@ def _filter_datasets(possible_datasets: list[str], user_query: str) -> list[str]
     
     # TODO there will likely need to be some processing here which converts back to a list of strings.
     # I have added a placeholder, but it may require adjustments depending on llm selected
-    filtering_response = filtering_response.split(",")
+    filtering_response = filtering_response.split(", ")
     
     return filtering_response

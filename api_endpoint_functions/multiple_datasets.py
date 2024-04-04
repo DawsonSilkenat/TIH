@@ -1,16 +1,16 @@
 import requests
 
-def multiple_datasets_by_keywords(user_query: str, datasets: list[str], tih_api_key: str, keywords: list[str]) -> list[dict[str, any]]:
+def multiple_datasets_by_keywords(user_query: str, datasets: list[str], tih_api_key: str, keywords: list[str], limit: int) -> list[dict[str, any]]:
     # Placeholder for getting additional parameters from the user's query
     
-    api_response = _request_from_api(datasets, tih_api_key, keywords)
+    api_response = _request_from_api(datasets, tih_api_key, keywords, limit)
     
     # Any processing would go here, but probably best to just return the full response
     
     return api_response
   
 
-def _request_from_api(datasets: list[str], tih_api_key: str, keywords: list[str]=None) -> list[dict[str, any]]:
+def _request_from_api(datasets: list[str], tih_api_key: str, keywords: list[str], limit: int) -> list[dict[str, any]]:
     url = "https://api.stb.gov.sg/content/common/v2/search"
     headers = {
         "X-API-Key" : tih_api_key, 
@@ -21,7 +21,7 @@ def _request_from_api(datasets: list[str], tih_api_key: str, keywords: list[str]
     query = {
         "dataset" : ", ".join(datasets),
         "distinct" : "Yes",
-        "limit" : 50
+        "limit" : limit
     }
     
     if keywords is not None:

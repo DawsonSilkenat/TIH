@@ -11,6 +11,6 @@ def get_query_keywords(user_query: str) -> list[str]:
     
     # TODO there will likely need to be some processing here which converts back to a list of strings.
     # I have added a placeholder, but it may require adjustments depending on llm selected
-    keywords_response = keywords_response.split(",")
+    keywords_response = keywords_response.split(", ")
     
     return keywords_response
