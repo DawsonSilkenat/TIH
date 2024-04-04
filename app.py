@@ -36,6 +36,9 @@ def handle_query():
         # Once we have the api responce we need the llm to process the response 
         llm_recommendations = process_api_responses(user_query, api_responses)
         
+        # chatgpt thinks it is writing markdown, so sometimes uses ** to make words bold. This doesn't work, either because it isn't valid html or because flask escapes it
+        llm_recommendations = llm_recommendations.replace("**", "") 
+        
         print(llm_recommendations)
         
     
