@@ -1,6 +1,6 @@
 import requests
 
-def multiple_datasets_by_keywords(user_query: str, datasets: list[str], tih_api_key: str, keywords: list[str], limit: int) -> list[dict[str, any]]:
+def multiple_datasets_by_keywords(conversation: list[dict[str, str]], datasets: list[str], tih_api_key: str, keywords: list[str], limit: int) -> list[dict[str, any]]:
     # Placeholder for getting additional parameters from the user's query
     
     api_response = _request_from_api(datasets, tih_api_key, keywords, limit)
@@ -21,11 +21,9 @@ def _request_from_api(datasets: list[str], tih_api_key: str, keywords: list[str]
     query = {
         "dataset" : ", ".join(datasets),
         "distinct" : "Yes",
-        "limit" : limit
+        "limit" : limit, 
+        "keyword" : ", ".join(keywords)
     }
-    
-    if keywords is not None:
-        query["keyword"] = ", ".join(keywords)
     
     
     response = requests.get(url, headers=headers, params=query)

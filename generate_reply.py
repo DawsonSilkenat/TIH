@@ -2,7 +2,7 @@ import llm_functions
 import re
 
 
-def process_api_responses(user_query: str, api_responses: list[dict[str, any]]) -> str:
+def answer_user_query(conversation: list[dict[str, str]], api_responses: list[dict[str, any]]) -> str:
     # Initial processing to extract only the useful information from the api responses
     # What we consider useful may change over time, and this processing step might need to move to the api_endpoint_functions if it depends significantly on the api used
     
@@ -12,28 +12,20 @@ def process_api_responses(user_query: str, api_responses: list[dict[str, any]]) 
         print(response)
         print()
     
-    llm_api_processing_user_role = "\n".join(("Query:", 
-                            user_query,
-                            "",
-                            "Context:",
-                            "\n\n".join(api_responses),
-                            "",
-                            "The query relates to asking about things to do in Singapore.",
-                            "The context is a list of relevant attractions in Singapore.",
-                            "Provide a detailed response to the query using only the information from the provided context.",
-                            "In addition to providing a list of options, you should try to provide some information about each option"))
-    
     system_prompt = "\n".join((
         "Your task is to assist users with their visits to Singapore.",
-        "At the very start of your message you will receive a query, which is exactly what the user asked.",
-        "After the query, you will be provided with context. This context is a list of attractions in Singapore relevant to the user's query.",
+        "To help you with this task, here is a list of relevant attractions in Singapore",
         "The elements of the list are split by an empty line.",
         "Each element of the list starts with the name of the attractions, followed by a new line, followed by a description of the attraction",
-        "You must provide a detailed response to the query using only the information from the provided context.",
-        "In addition to providing a list of options, you should try to provide some information about each option in your answer."
+        "",
+        "attractions:",
+        "\n\n".join(api_responses),
+        "",
+        "You must provide a detailed answer to the user's query using only the information from the provided list of attractions.",
+        "In addition to providing a list of attractions, you should try to provide some information about each attraction in your answer."
     ))
     
-    llm_api_processing_response = llm_functions.generate_llm_response(llm_api_processing_user_role, system_prompt=system_prompt)
+    llm_api_processing_response = llm_functions.generate_llm_response(conversation, system_prompt=system_prompt)
     
     return llm_api_processing_response
     
