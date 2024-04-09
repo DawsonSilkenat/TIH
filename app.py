@@ -3,9 +3,8 @@ from keywords import get_query_keywords
 from api_endpoint_functions.query_multiple_datasets import multiple_datasets_by_keywords
 from api_endpoint_functions.format_api_response import format_api_response
 
-# from possible_actions.decide_action import decide_action
-from possible_actions.provide_answer import answer_user_query
-
+from possible_actions.collect_user_data import collect_user_data
+from llm_functions import LLMResponseType, LLMResponse
 from flask import Flask, render_template, request
 import json
 
@@ -16,7 +15,37 @@ with open("api_keys.json", "r") as file:
     tih_api_key = keys["TIH"]
 
 # For now I am just going to store the conversation. This should be replaced eventually, but good enough for poc
-conversation = []
+ai_conversation = []
+view_conversation = []
+
+
+def append_to_conversation(data : dict):
+    ai_conversation.append(data)
+    if data['role'] != 'tool' and 'content' in data:
+        view_conversation.append(data)
+
+
+def collect_data_and_respond():
+    llm_answer = None
+    api_response = collect_user_data(ai_conversation)
+    print(f"api_response: {api_response}")
+    if api_response.response_type == LLMResponseType.TEXT:
+        llm_answer = api_response.response_text
+        append_to_conversation({"role": "assistant", "content": llm_answer})
+    else:
+        datasets = get_datasets(ai_conversation, tih_api_key)
+        print(f"datasets: {datasets}")
+        keywords = get_query_keywords(ai_conversation)
+        print(f"keywords: {keywords}")
+        dk_api_responses = multiple_datasets_by_keywords(ai_conversation, datasets, tih_api_key, keywords, 25)
+        dk_api_responses = [format_api_response(response) for response in dk_api_responses]
+        print(f"dk_api_responses: {dk_api_responses}")
+        append_to_conversation({"role": "assistant", "tool_calls": api_response.response_tool_data})
+        append_to_conversation({"role": "tool", "tool_call_id": api_response.response_tool_id, "content": "\n\n".join(dk_api_responses)})
+        print(ai_conversation)
+        collect_data_and_respond()
+
+    return llm_answer
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -26,37 +55,10 @@ def handle_query():
     
     if request.method == "POST":
         user_query = request.form["user_input"]
-        conversation.append({"role": "user", "content": user_query})
-        
-        datasets = get_datasets(conversation, tih_api_key)
-        print(datasets)
-        
-        keywords = get_query_keywords(conversation)
-        print(keywords)
-    
-        # For now I am using just the Search Multiple Datasets By Keyword endpoint
-        # This is the simplest method. I would also like to look at doing each endpoint individually, but not MVP 
-        # Concern: Even though this may pull from multiple datasets, I don't think there is any reason to expect it will since the first n results may be from a single dataset
-        api_responses = multiple_datasets_by_keywords(conversation, datasets, tih_api_key, keywords, 25)
-        api_responses = [format_api_response(response) for response in api_responses]
-        
-        for response in api_responses:
-            print(response)
-            print()
-    
-        
-        # llm_answer = decide_action(conversation, api_responses)
-        llm_answer = answer_user_query(conversation, api_responses)
-        
-        # Here would be the place to look at deals, augment the information provided to the llm
-    
-        # # Once we have the api responce we need the llm to process the response 
-        # llm_answer = answer_user_query(conversation, api_responses)
-        
-        conversation.append({"role": "assistant", "content": llm_answer})
-        
-        
-    return render_template("demo_page.html", user_query=user_query, llm_answer=llm_answer)
+        append_to_conversation({"role": "user", "content": user_query})
+        collect_data_and_respond()
+
+    return render_template("demo_page.html", conversations=view_conversation)
     
 
 if __name__ == "__main__":

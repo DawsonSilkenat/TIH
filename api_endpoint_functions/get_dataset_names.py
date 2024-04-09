@@ -48,7 +48,7 @@ def _filter_datasets(possible_datasets: list[str], conversation: list[dict[str, 
         "Your response should be a comma seperated list of categories and nothing else"
     ))
     
-    filted_datasets = llm_functions.generate_llm_response(conversation, system_prompt=system_prompt)
+    filted_datasets = llm_functions.generate_llm_response(conversation, system_prompt=system_prompt).response_text
     
     filted_datasets = filted_datasets.split(", ")
     

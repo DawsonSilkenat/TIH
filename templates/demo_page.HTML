@@ -12,23 +12,50 @@
             white-space: pre-line;
             width: 50%;
         }
+
+        td {
+          border: 1px solid black;
+          border-radius: 10px;
+        }
+
+        td:first-child {
+            border: none;
+        }
+        td:last-child {
+            width:100%;
+            padding: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="center">
-        <form action="/" method="post">
-            <label for="user_input">Enter your query:</label><br>
-            <input type="text" id="user_input" name="user_input" {% if user_query %} value="{{user_query}}"" {% endif %}>
-
-            <!-- <textarea id="user_input" name="user_input" rows="4" cols="50"></textarea><br> -->
-            
-            <input type="submit" value="Submit">
-        </form>
-        {% if llm_answer %}
         <div class="response">
-            </pre>{{ llm_answer }}</pre>
+            <table>
+                {% if conversations %}
+                    {% for conversation in conversations: %}
+                    <tr>
+                        <td>
+                            {{ conversation['role'] }}
+                        </td>
+                        <td>
+                            <pre>{{ conversation['content'] }}</pre>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+                <tr>
+                    <td></td>
+                    <td style="border: none;">
+                        <div class="center">
+                            <form action="/" method="post" >
+                                <input style="width:70%;" type="text" id="user_input" name="user_input" {% if user_query %} value="{{user_query}}" {% endif %} placeholder="Enter your recommendation request here"/>
+                                <input type="submit" value="Submit">
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
-        {% endif %}
     </div>
 </body>
 </html>
