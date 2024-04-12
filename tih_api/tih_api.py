@@ -113,8 +113,8 @@ class TIHAPI:
         # If setting start and end date to datasets that do not provide these fields 0 items are returned.
         # Therefore, only apply for events
         if 'events' in datasets and start_date is not None and end_date is not None:
-            query["startDate"] = (start_date-datetime.timedelta(days=offset_days)).today().strftime('%Y-%m-%d')
-            query["endDate"] = (end_date+datetime.timedelta(days=offset_days)).today().strftime('%Y-%m-%d')
+            query["startDate"] = (start_date-datetime.timedelta(days=offset_days)).strftime('%Y-%m-%d')
+            query["endDate"] = (end_date+datetime.timedelta(days=offset_days)).strftime('%Y-%m-%d')
 
         response = requests.get(url, headers=headers, params=query)
 
