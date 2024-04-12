@@ -1,43 +1,53 @@
-from api_endpoint_functions.get_dataset_names import get_datasets
-from keywords import get_query_keywords
-from api_endpoint_functions.query_multiple_datasets import multiple_datasets_by_keywords
-from api_endpoint_functions.format_api_response import format_api_response
+from enrich_places_api.cache_json import JsonFileCache
+from enrich_places_api.places_lookup_google import GooglePlacesLookup
+from llm_api.llm_queries_openai import OpenAILLMQueries
+from llm_api.llm_models import LLMResponseType
+from tih_api.tih_api import TIHAPI
+from tih_api.format_api_response import format_api_response
 
-from possible_actions.collect_user_data import collect_user_data
-from llm_functions import LLMResponseType, LLMResponse
 from flask import Flask, render_template, request
 import json
+from datetime import datetime
 
 # Creating the app and loading api keys 
 app = Flask(__name__)
 with open("api_keys.json", "r") as file:
     keys = json.load(file)
     tih_api_key = keys["TIH"]
+    google_api_key = keys["GoogleAPI"]
+    openai_api_key = keys["OpenAI"]
 
 # For now I am just going to store the conversation. This should be replaced eventually, but good enough for poc
 ai_conversation = []
 view_conversation = []
+cache = JsonFileCache('places_cache.json', 'places_cache_requests.json')
+places_look_up = GooglePlacesLookup(google_api_key, cache)
+tih_api = TIHAPI(tih_api_key, places_look_up)
+llm = OpenAILLMQueries(openai_api_key)
 
-
-def append_to_conversation(data : dict):
+def append_to_conversation(data: dict):
     ai_conversation.append(data)
-    if data['role'] != 'tool' and 'content' in data:
-        view_conversation.append(data)
+    #if data['role'] != 'tool' and 'content' in data:
+    #    view_conversation.append(data)
 
 
 def collect_data_and_respond():
     llm_answer = None
-    api_response = collect_user_data(ai_conversation)
+    api_response = llm.collect_user_data(ai_conversation)
     print(f"api_response: {api_response}")
     if api_response.response_type == LLMResponseType.TEXT:
-        llm_answer = api_response.response_text
+        llm_answer = api_response.response_text.replace("**", "")
         append_to_conversation({"role": "assistant", "content": llm_answer})
     else:
-        datasets = get_datasets(ai_conversation, tih_api_key)
-        print(f"datasets: {datasets}")
-        keywords = get_query_keywords(ai_conversation)
+        datasets = tih_api.get_datasets()
+        datasets = llm.filter_datasets(ai_conversation, datasets)
+        print(f"selected datasets: {datasets}")
+        keywords = llm.get_query_keywords(ai_conversation)
         print(f"keywords: {keywords}")
-        dk_api_responses = multiple_datasets_by_keywords(ai_conversation, datasets, tih_api_key, keywords, 25)
+        print(api_response.response_function_arguments)
+        start_date = datetime.strptime(api_response.response_function_arguments["tripStartDate"], '%Y-%m-%d')
+        end_date = datetime.strptime(api_response.response_function_arguments["tripEndDate"], '%Y-%m-%d')
+        dk_api_responses = tih_api.multiple_datasets_by_keywords(datasets, keywords, 25, start_date, end_date)
         dk_api_responses = [format_api_response(response) for response in dk_api_responses]
         print(f"dk_api_responses: {dk_api_responses}")
         append_to_conversation({"role": "assistant", "tool_calls": api_response.response_tool_data})
@@ -58,7 +68,7 @@ def handle_query():
         append_to_conversation({"role": "user", "content": user_query})
         collect_data_and_respond()
 
-    return render_template("demo_page.html", conversations=view_conversation)
+    return render_template("demo_page.html", conversations=ai_conversation)
     
 
 if __name__ == "__main__":
