@@ -2,14 +2,16 @@ from typing import Iterable
 from openai import OpenAI, NotGiven, NOT_GIVEN
 from openai.types.chat import ChatCompletionMessageParam
 import json
+import time
 
 from llm_api.llm_queries_interface import ILLMQueries
 from llm_api.llm_models import LLMResponse, LLMResponseType
 
 
 class OpenAILLMQueries(ILLMQueries):
-    def __init__(self, api_key):
+    def __init__(self, api_key, model):
         self._client = OpenAI(api_key=api_key)
+        self._model = model
 
     def _generate_llm_response(self, conversation: list[dict[str, str]], response_start: str = None, system_prompt: str = None,
                               tools: Iterable[ChatCompletionMessageParam] | NotGiven = NOT_GIVEN) -> LLMResponse:
@@ -23,12 +25,15 @@ class OpenAILLMQueries(ILLMQueries):
         if response_start is not None:
             messages.append({"role": "assistant", "content": response_start})
 
+        start = time.time()
         response = self._client.chat.completions.create(
-            model="gpt-4-turbo",
+            model=self._model,
             messages=messages,
             tools=tools)
+        end = time.time()
+        print(f"LLM request took {end - start} seconds")
 
-        print(response)
+        #print(response)
         if response.choices[0].finish_reason == 'tool_calls':
             tool_call = response.choices[0].message.tool_calls[0]
             return LLMResponse(LLMResponseType.FUNCTION, "", tool_call.id, tool_call.function.name,
@@ -55,7 +60,7 @@ class OpenAILLMQueries(ILLMQueries):
         select up to 5 recommendations that best matches the provided user information.
         Between each recommendation item a line break needs to be inserted.
         Format the recommendations as plain text. 
-        Do not format the recommendations as markdown!
+        Remove any markdown formatting
         Include the Restaurant name, Description, Website, Address and rating information for each recommendations if available.
         """
 
@@ -90,6 +95,10 @@ class OpenAILLMQueries(ILLMQueries):
                         "topicPreferences": {
                             "type": "string",
                             "description": "preferences that relates to the given user topic."
+                        },
+                        "priceLevel": {
+                            "type": "integer",
+                            "description": ""
                         }
                     }
                 }
@@ -101,8 +110,9 @@ class OpenAILLMQueries(ILLMQueries):
         during there vacation. The conversation should be broken down into a few important keywords provided by the user.
         The result should contain a maximum of 10 keywords.
         The keywords must be valid url arguments therefore characters such as / or . are not allowed.
-    
-        Example Conversation:
+        Your response should be only keywords comma separated and nothing else
+        
+        Conversation:
         user: I want to visit some music event.
         assistant: What are your music preferences?
         user: I like techno and rock.
@@ -115,20 +125,22 @@ class OpenAILLMQueries(ILLMQueries):
         assistant: Therefore it needs to be family friendly?
         user: yes
     
-        Example Result: family-friendly, children, music, techno, rock
+        Result: family-friendly, children, music, techno, rock
     
         Conversation: <conversation>.
         Results: 
         """
-
+        start = time.time()
         simplified_conversation = list()
         for data in conversation:
             if 'content' in data:
                 simplified_conversation.append(f"{data['role']}: {data['content']}")
 
-        system_prompt = system_prompt.replace("<conversation>", "\n\n".join(simplified_conversation))
+        system_prompt = system_prompt.replace("<conversation>", "\n".join(simplified_conversation))
 
-        keywords_response = self._generate_llm_response([], system_prompt=system_prompt).response_text
+        keywords_response = self._generate_llm_response(list(), system_prompt=system_prompt).response_text
+        end = time.time()
+        print(f"Keywords LLM request took {end - start} seconds")
         return keywords_response.split(", ")
 
     def filter_datasets(self, conversation: list[dict[str, str]], possible_datasets: list[str]) -> list[str]:
@@ -141,6 +153,7 @@ class OpenAILLMQueries(ILLMQueries):
         Returns:
             list[str]: The elements of possible_datasets which are relevant to the user's query
         """
+        start = time.time()
         str_possible_datasets = ", ".join(possible_datasets)
         str_conversation = ""
         for message in conversation:
@@ -162,4 +175,6 @@ class OpenAILLMQueries(ILLMQueries):
         filtered_datasets = self._generate_llm_response(list(), system_prompt=system_prompt).response_text
         filtered_datasets = filtered_datasets.split(",")
         filtered_datasets = [item.strip() for item in filtered_datasets]
+        end = time.time()
+        print(f"Dataset filter LLM request took {end - start} seconds")
         return filtered_datasets

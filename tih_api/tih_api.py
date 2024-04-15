@@ -1,15 +1,20 @@
 import requests
 import datetime
+import json
 from enrich_places_api.places_lookup_google import IPlacesLookup
-
+import time
 
 class TIHAPI:
-    def __init__(self, tih_api_key: str,  places: IPlacesLookup, max_cache_age: int = 300):
+    def __init__(self, tih_api_key: str,  places: IPlacesLookup, dataset_cache_file_path: str, max_cache_age: int = 6000):
         self._tih_api_key = tih_api_key
         self._places = places
         self._datasets_cache = list[str]()
         self._datasets_cache_time = None
         self._max_cache_age = max_cache_age
+        self._dataset_cache_file_path = dataset_cache_file_path
+        self._hidden_gem_dataset_type_filter = ['food_beverages', 'bars_clubs', 'shops', 'attractions']
+        self._read_dataset_cache()
+
 
     def multiple_datasets_by_keywords(self, datasets: list[str], keywords: list[str], limit: int,
                                       start_date: datetime, end_date: datetime, expected_result_count: int = 25)\
@@ -17,24 +22,19 @@ class TIHAPI:
         valid_responses = list[dict[str, any]]()
 
         offset = 0
+        enrich_data = any(item in datasets for item in self._hidden_gem_dataset_type_filter)
         while len(valid_responses) < expected_result_count:
             api_response = self._request_from_api(datasets, keywords, limit, offset, start_date, end_date)
-            if 'events' in datasets:
+
+            # if we don't need to enrich the data just return the tih data.
+            if not enrich_data:
                 return api_response
 
-            offset = offset + limit
-            for item in api_response:
-                block, street = self._get_tih_address_data(item)
-                if self._is_matching_google_rating_filter(item['name'], block, street,
-                                                          float(item['location']['latitude']),
-                                                          float(item['location']['longitude'])):
-                    print(f"hidden gem :{item['name']}")
-                    valid_responses.append(item)
-                    if len(valid_responses) >= expected_result_count:
-                        return valid_responses
-
+            self._check_for_hidden_gems(api_response, valid_responses, expected_result_count)
             if len(api_response) < limit:
                 return valid_responses
+
+            offset = offset + limit
 
         return valid_responses
 
@@ -43,8 +43,28 @@ class TIHAPI:
             self._datasets_cache = self._request_dataset_list()
             self._datasets_cache_time = datetime.datetime.now()
             print("dataset cache refreshed")
+            print(self._datasets_cache)
+            self._write_dataset_cache()
 
         return self._datasets_cache
+
+    def _check_for_hidden_gems(self, api_response: list[dict[str, any]], valid_responses: list[dict[str, any]],
+                               expected_result_count: int):
+        start = time.time()
+        for item in api_response:
+            block, street = self._get_tih_address_data(item)
+            if self._is_matching_google_rating_filter(item['name'], block, street,
+                                                      float(item['location']['latitude']),
+                                                      float(item['location']['longitude'])):
+                print(f"hidden gem :{item['name']}")
+                valid_responses.append(item)
+                if len(valid_responses) >= expected_result_count:
+                    end = time.time()
+                    print(f"Hidden gem check took {end - start} seconds")
+                    return valid_responses
+
+        end = time.time()
+        print(f"Hidden gem check took {end - start} seconds")
 
     def _get_tih_address_data(self, item) -> (str, str):
         if len(item['address']['block'].strip()) == 0:
@@ -63,14 +83,15 @@ class TIHAPI:
         Returns:
             list[str]: the list of available datasets
         """
-
+        start = time.time()
         url = "https://api.stb.gov.sg/content/common/v2/datasets"
         headers = {
             "X-API-Key": self._tih_api_key,
             "Content-Type": "application/json"
         }
         response = requests.get(url, headers=headers)
-
+        end = time.time()
+        print(f"fetching datasets request took {end - start} seconds")
         if response.status_code == 200:
             return response.json().get("data")
         response.raise_for_status()
@@ -81,7 +102,7 @@ class TIHAPI:
         if float(latitude) == 0.0 and float(longitude) == 0.0:
             return False
 
-        print(f"check google or cache for: {name} {block} {latitude} {longitude}")
+        #print(f"check google or cache for: {name} {block} {latitude} {longitude}")
         google_place_result = self._places.find_place(name, block, street_name, latitude, longitude)
         if google_place_result is not None:
             rating_count = google_place_result['user_ratings_total']
@@ -95,6 +116,7 @@ class TIHAPI:
 
     def _request_from_api(self, datasets: list[str], keywords: list[str], limit: int, offset: int,
                           start_date: datetime, end_date: datetime, offset_days: int = 5) -> list[dict[str, any]]:
+        start = time.time()
         url = "https://api.stb.gov.sg/content/common/v2/search"
         headers = {
             "X-API-Key": self._tih_api_key,
@@ -117,7 +139,21 @@ class TIHAPI:
             query["endDate"] = (end_date+datetime.timedelta(days=offset_days)).strftime('%Y-%m-%d')
 
         response = requests.get(url, headers=headers, params=query)
-
+        end = time.time()
+        print(f"Fetching tih data took {end - start} seconds")
         if response.status_code == 200:
             return response.json()["data"]
         response.raise_for_status()
+
+    def _write_dataset_cache(self):
+        cache_obj = {'cache_data': self._datasets_cache, 'cachedAt': datetime.datetime.today().strftime("%d-%m-%y %H:%M:%S")}
+        json_object = json.dumps(cache_obj, indent=4)
+        with open(self._dataset_cache_file_path, "w") as outfile:
+            outfile.write(json_object)
+
+    def _read_dataset_cache(self):
+        with open(self._dataset_cache_file_path, "r") as file:
+            json_obj = json.load(file)
+            if 'cache_data' in json_obj:
+                self._datasets_cache = json_obj['cache_data']
+                self._datasets_cache_time = datetime.datetime.strptime(json_obj['cachedAt'], '%d-%m-%y %H:%M:%S')

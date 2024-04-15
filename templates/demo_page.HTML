@@ -2,6 +2,40 @@
 <head>
     <title>TIH LLM Demo</title>
     <style>
+        .circle-you {
+            display: inline-block;
+            padding: 5px;
+            border-radius: 50%;
+            background-color: #11817A;
+        }
+        .circle-tih {
+            display: inline-block;
+            padding: 5px;
+            border-radius: 50%;
+            background-color: #fff;
+        }
+        .message-header-text {
+            margin: 0;
+            padding: 0px;
+        }
+        .message-header-column {
+            border: none;
+            margin: 0;
+            padding: 0px;
+        }
+        .message-header-row {
+            border: none;
+        }
+        .chat-input {
+            flex-grow: 1;
+            margin-right:5px;
+            border: none;
+            height: 40px;
+            outline: none;
+            background-color: transparent;
+            color: #fff;
+        }
+
         .center {
             display: flex;
             flex-direction: column;
@@ -16,8 +50,14 @@
         .pre-content {
             white-space: pre-line;
         }
+        body {
+            background-color: #333;
+            color: #fff;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
         td {
-          border: 1px solid black;
+          border: 1px solid #424242;
           border-radius: 10px;
           padding: 0 15px;
         }
@@ -57,16 +97,44 @@
     </style>
 </head>
 <body>
+    <div>
+       <img src="static/tih-logo.svg" alt="SVG Image">
+    </div>
     <div class="center">
         <div class="response">
+            {% if not conversations %}
+                <div class="center">
+                    <div>
+                        <img src="static/tih-minimal-logo.svg" alt="SVG Image">
+                    </div>
+                    <div>How can I help you today?</div>
+                </div>
+            {% endif %}
             <table>
                 {% if conversations %}
                     {% for conversation in conversations: %}
                         {% if 'content' in conversation %}
                         {% if conversation['role'] != 'tool' %}
+                        <tr class="message-header-row">
+                            <td class="message-header-column">
+                               {% if conversation['role'] == 'user' %}
+                                <div class="circle-you">
+                                    <h5 class="message-header-text">
+                                        You
+                                    </h5>
+                                </div>
+                                {% else %}
+                                 <div class="circle-tih">
+                                    <h5 class="message-header-text">
+                                        <img src="static/tih-minimal-logo.svg" alt="SVG Image" width="20px" height="20px">
+                                    </h5>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="message-header-column"></td>
+                        </tr>
                         <tr>
                             <td>
-                                {{ conversation['role'] }}
                             </td>
                             <td>
                                 <pre class="pre-content">{{ conversation['content'] }}</pre>
@@ -86,12 +154,18 @@
                 </tr>
                 <tr>
                     <td></td>
-                    <td style="border: none;">
-                        <div class="center">
-                            <form action="/" method="post" onsubmit="showSpinner()" style="width:100%;">
+                    <td style="padding: 5px;margin=0;">
+                        <div class="center" style="height: 40px;">
+                            <form action="/" method="post" onsubmit="showSpinner()" style="width:100%;padding=0px;">
                                 <div style="display: flex;">
-                                    <input style="flex-grow: 1; margin-right:5px; border-radius: 10px; height: 40px;" type="text" id="user_input" name="user_input" {% if user_query %} value="{{user_query}}" {% endif %} placeholder="Enter your recommendation request here"/>
-                                    <input style="flex-grow: 0;" type="submit" value=">>">
+                                    <input class="chat-input" type="text" id="user_input" name="user_input" {% if user_query %} value="{{user_query}}" {% endif %} placeholder="Request a recommendation..." oninput="checkInputValue()"/>
+                                    <button id="submit_button" type="submit" disabled="" class="flex-grow: 0;absolute bottom-1.5 right-2 rounded-lg border border-black bg-black p-0.5 text-white transition-colors enabled:bg-black disabled:text-gray-400 disabled:opacity-10 dark:border-white dark:bg-white dark:hover:bg-white md:bottom-3 md:right-3" data-testid="send-button">
+                                        <span class="" data-state="closed">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-white dark:text-black">
+                                                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            </svg>
+                                        </span>
+                                    </button>
                                 </div>
                             </form>
                         </div>
@@ -104,6 +178,17 @@
         function showSpinner()
         {
             document.getElementById("loader").style.display = "block";
+        }
+
+        function checkInputValue()
+        {
+            var userInput = document.getElementById('user_input').value;
+            var submitButton = document.getElementById('submit_button');
+            if (userInput.trim() !== '') {
+                submitButton.removeAttribute('disabled');
+            } else {
+                submitButton.setAttribute('disabled', '');
+            }
         }
     </script>
 </body>

@@ -16,14 +16,16 @@ with open("api_keys.json", "r") as file:
     tih_api_key = keys["TIH"]
     google_api_key = keys["GoogleAPI"]
     openai_api_key = keys["OpenAI"]
+    model = keys["LLMModel"]
+    max_tih_cache_age = keys["MaxCacheAgeTIHDataset"]
 
 # For now I am just going to store the conversation. This should be replaced eventually, but good enough for poc
 ai_conversation = []
 view_conversation = []
 cache = JsonFileCache('places_cache.json', 'places_cache_requests.json')
 places_look_up = GooglePlacesLookup(google_api_key, cache)
-tih_api = TIHAPI(tih_api_key, places_look_up)
-llm = OpenAILLMQueries(openai_api_key)
+tih_api = TIHAPI(tih_api_key, places_look_up, "tih_datasets_cache.json", max_tih_cache_age)
+llm = OpenAILLMQueries(openai_api_key, model)
 
 def append_to_conversation(data: dict):
     ai_conversation.append(data)
