@@ -53,8 +53,9 @@ class OpenAILLMQueries(ILLMQueries):
         If the group contains people below 16 year old the recommendation must be children friendly.
         Only ask one question at the time.
     
-        Only when you have collect the following information Topic, Individual or group, children friendly or not, 
-        trip start and end date, topic preferences, within the topic you can call the function getRecommendations.
+        Only when you have collect the following information Topic, Individual or group, children friendly or not,
+        reason for the visit, trip start and end date, topic preferences,
+        within the topic you can call the function getRecommendations.
     
         If you retrieved the list of recommendations from the function 
         select up to 5 recommendations that best matches the provided user information.
@@ -96,9 +97,13 @@ class OpenAILLMQueries(ILLMQueries):
                             "type": "string",
                             "description": "preferences that relates to the given user topic."
                         },
-                        "priceLevel": {
+                        "budget": {
                             "type": "integer",
-                            "description": ""
+                            "description": "The budget for the visit."
+                        },
+                        "reasonForVisit":{
+                            "type": "string",
+                            "description": "Reason why the person visits singapore e.g. leisure/vacation, medical, Meetings, Incentives, Conferences, and Exhibitions"
                         }
                     }
                 }
@@ -106,42 +111,16 @@ class OpenAILLMQueries(ILLMQueries):
         }])
 
     def get_query_keywords(self, conversation: list[dict[str, str]]) -> list[str]:
-        system_prompt = """ Your are supporting with breaking down a conversation that want to get activity recommendations 
-        during there vacation. The conversation should be broken down into a few important keywords provided by the user.
-        The result should contain a maximum of 10 keywords.
-        The keywords must be valid url arguments therefore characters such as / or . are not allowed.
-        Your response should be only keywords comma separated and nothing else
-        
-        Conversation:
-        user: I want to visit some music event.
-        assistant: What are your music preferences?
-        user: I like techno and rock.
-        assistant: How long do you stay in singapore?
-        user: from 01/03/23 to 20/03/23.
-        assistant: Are you visiting singapore alone or in a group?
-        user: with my family.
-        assistant: how many people and how old are they?
-        user: 4 people: 35, 36, 7, 8
-        assistant: Therefore it needs to be family friendly?
-        user: yes
-    
-        Result: family-friendly, children, music, techno, rock
-    
-        Conversation: <conversation>.
-        Results: 
-        """
         start = time.time()
         simplified_conversation = list()
         for data in conversation:
             if 'content' in data:
-                simplified_conversation.append(f"{data['role']}: {data['content']}")
+                simplified_conversation.append(data['content'])
 
-        system_prompt = system_prompt.replace("<conversation>", "\n".join(simplified_conversation))
-
-        keywords_response = self._generate_llm_response(list(), system_prompt=system_prompt).response_text
+        keywords = self._get_query_keywords(simplified_conversation)
         end = time.time()
         print(f"Keywords LLM request took {end - start} seconds")
-        return keywords_response.split(", ")
+        return keywords
 
     def filter_datasets(self, conversation: list[dict[str, str]], possible_datasets: list[str]) -> list[str]:
         """We would like to reduce possible_datasets to only those related to the user's query.
@@ -178,3 +157,45 @@ class OpenAILLMQueries(ILLMQueries):
         end = time.time()
         print(f"Dataset filter LLM request took {end - start} seconds")
         return filtered_datasets
+
+    def _get_query_keywords(self, conversation: list[str], retries: int = 5) -> list[str]:
+        system_prompt = """ Your are supporting with breaking down a text that is about recommendations for visiting Singapore.
+        The text should be broken down into a few important keywords.
+        The result should contain a maximum of 10 keywords.
+        The keywords must be valid url arguments therefore characters such as / or . are not allowed.
+
+        Exmaple Text:
+        I want to visit some music event.
+        What are your music preferences?
+        I like techno and rock.
+        How long do you stay in singapore?
+        from 01/03/23 to 20/03/23.
+        Are you visiting singapore alone or in a group?
+        with my family.
+        how many people and how old are they?
+        4 people: 35, 36, 7, 8
+        Therefore it needs to be family friendly?
+        yes
+
+        Example Result: family-friendly, children, music, techno, rock
+
+        Text: <conversation>.
+
+        You should not respond to question within the text
+        Your response should be only keywords comma separated nothing else  
+        """
+        system_prompt = system_prompt.replace("<conversation>", "\n".join(conversation))
+        keywords_response = self._generate_llm_response(list(), system_prompt=system_prompt).response_text
+        keywords = keywords_response.split(", ")
+        if self._validate_keywords(keywords):
+            return keywords
+        else:
+            # TODO CROP old conversation?
+            return self._get_query_keywords(conversation, retries - 1)
+
+    def _validate_keywords(self, keywords: list[str]):
+        for keyword in keywords:
+            if len(keyword.split(' ')) > 2:
+                return False
+
+        return len(keywords) > 0

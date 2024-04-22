@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+    <div class="include-container-vh">
+        {% if conversations %}
+        <div class="responses response-item-collection">
+            {% for conversation in conversations: %}
+            {% include 'response_item.html' %}
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="chat-content-initial-state">
+            <img src="static/sg-flag.svg" alt="SVG Image">
+            <p>Start travelling to Singapore!</p>
+            <p>How can we assist you?</p>
+        </div>
+        {% endif %}
+    </div>
+</html>

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+    {% if 'content' in conversation %}
+    {% if conversation['role'] != 'tool' %}
+    <div>
+        {% if conversation['role'] == 'user' %}
+        <div>
+            {% include 'response_item_header_user.html' %}
+        </div>
+        {% else %}
+        <div>
+            {% include 'response_item_header_llm.html' %}
+        </div>
+        {% endif %}
+        <div>
+            {% include 'response_item_content.html' %}
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</html>

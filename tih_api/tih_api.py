@@ -17,7 +17,7 @@ class TIHAPI:
 
 
     def multiple_datasets_by_keywords(self, datasets: list[str], keywords: list[str], limit: int,
-                                      start_date: datetime, end_date: datetime, expected_result_count: int = 25)\
+                                      start_date: datetime, end_date: datetime, expected_result_count: int = 10)\
             -> list[dict[str, any]]:
         valid_responses = list[dict[str, any]]()
 
@@ -108,7 +108,7 @@ class TIHAPI:
             rating_count = google_place_result['user_ratings_total']
             rating = google_place_result['rating']
             operational = google_place_result['business_status'] == 'OPERATIONAL'
-            return (operational and rating_count < max_rating_count and rating >= minimum_rating) or rating_count <= 0
+            return (operational and rating_count < max_rating_count and rating >= minimum_rating) or rating_count <= 10
         else:
             print(f"Resturant {name}, {block}, {street_name}, {latitude}, {longitude} couldn't be found")
 

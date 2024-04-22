@@ -10,7 +10,10 @@ class GooglePlacesLookup(IPlacesLookup):
     def __init__(self, api_key, cache: ICache):
         self._cache = cache
         self._cache.load_cache()
-        self._client = googlemaps.Client(key=api_key)
+        if api_key and not api_key.isspace():
+            self._client = googlemaps.Client(key=api_key)
+        else:
+            self._client = None
 
     def find_place(self, place: str, block: str, street_name: str, latitude: float, longitude: float) -> dict | None:
         already_searched = self._cache.is_request_in_cache(latitude, longitude)
@@ -23,6 +26,10 @@ class GooglePlacesLookup(IPlacesLookup):
 
         if already_searched:
             #TODO check cache age and invalidate, if to old query google again (code below)
+            return None
+
+        # API Key not set therefore only the data cache is used
+        if self._client is None:
             return None
 
         print("Data not found in caching retrieving data from google...")

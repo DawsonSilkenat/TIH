@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+    <body>
+        <form action="/" method="post" onsubmit="showSpinner()">
+            <input autocomplete="off" type="text" id="user_input" name="user_input" {% if user_query %}
+                   value="{{user_query}}" {% endif %} placeholder="Request a recommendation..."
+                   oninput="checkInputValue()"/>
+            <button id="submit_button" type="submit" disabled="" data-testid="send-button">
+                <span class="" data-state="closed">
+                    <img src="static/send-icon.svg" alt="SVG Image">
+                </span>
+            </button>
+        </form>
+        <script>
+        window.scrollTo(0, document.body.scrollHeight);
+        function showSpinner()
+        {
+            document.getElementById("loader").style.display = "block";
+        }
+
+        function checkInputValue()
+        {
+            window.scrollTo(0, document.body.scrollHeight);
+            var userInput = document.getElementById('user_input').value;
+            var submitButton = document.getElementById('submit_button');
+            if (userInput.trim() !== '') {
+                submitButton.removeAttribute('disabled');
+            } else {
+                submitButton.setAttribute('disabled', '');
+            }
+        }
+    </script>
+    </body>
+</html>

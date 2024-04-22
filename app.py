@@ -14,13 +14,38 @@ app = Flask(__name__)
 with open("api_keys.json", "r") as file:
     keys = json.load(file)
     tih_api_key = keys["TIH"]
-    google_api_key = keys["GoogleAPI"]
+    if 'GoogleAPI' in keys:
+        google_api_key = keys["GoogleAPI"]
+    else:
+        google_api_key = None
     openai_api_key = keys["OpenAI"]
     model = keys["LLMModel"]
     max_tih_cache_age = keys["MaxCacheAgeTIHDataset"]
 
+#test data
+test = list[dict]()
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+test.append({'role': 'user', 'content': 'message'})
+#ai_conversation = test
+#view_conversation = ai_conversation
+
 # For now I am just going to store the conversation. This should be replaced eventually, but good enough for poc
-ai_conversation = []
+ai_conversation = [{}]
 view_conversation = []
 cache = JsonFileCache('places_cache.json', 'places_cache_requests.json')
 places_look_up = GooglePlacesLookup(google_api_key, cache)
@@ -60,8 +85,28 @@ def collect_data_and_respond():
     return llm_answer
 
 
+@app.route("/index.html", methods=["GET", "POST"])
+def handle_query_index():
+    return render_template("index.html")
+
+
+@app.route("/sidebar.html", methods=["GET", "POST"])
+def handle_query_sidebar():
+    return render_template("sidebar.html")
+
+
+@app.route("/response_view.html", methods=["GET", "POST"])
+def handle_query_response_view():
+    return render_template("response_view.html")
+
+
+@app.route("/chatbox.html", methods=["GET", "POST"])
+def handle_query_chatbox():
+    return render_template("chatbox.html")
+
+
 @app.route("/", methods=["GET", "POST"])
-def handle_query():
+def handle_query_other():
     llm_answer = None
     user_query = None
     
@@ -70,8 +115,18 @@ def handle_query():
         append_to_conversation({"role": "user", "content": user_query})
         collect_data_and_respond()
 
+    return render_template("index.html", conversations=ai_conversation)
+
+
+@app.route("/reset", methods=["GET"])
+def handle_reset():
+    global ai_conversation
+    global view_conversation
+    ai_conversation = []
+    view_conversation = []
+
     return render_template("demo_page.html", conversations=ai_conversation)
-    
+
 
 if __name__ == "__main__":
     app.run()
