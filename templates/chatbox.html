@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
     <body>
-        <form action="/" method="post" onsubmit="showSpinner()">
-            <input autocomplete="off" type="text" id="user_input" name="user_input" {% if user_query %}
-                   value="{{user_query}}" {% endif %} placeholder="Request a recommendation..."
-                   oninput="checkInputValue()"/>
-            <button id="submit_button" type="submit" disabled="" data-testid="send-button">
-                <span class="" data-state="closed">
-                    <img src="static/send-icon.svg" alt="SVG Image">
-                </span>
-            </button>
-        </form>
+        <div class="content-area-chat-box">
+            <form action="/" method="post" onsubmit="showSpinner()">
+                <input autocomplete="off" type="text" id="user_input" name="user_input" {% if user_query %}
+                       value="{{user_query}}" {% endif %} placeholder="Request a recommendation..."
+                       oninput="checkInputValue()"/>
+                <button id="submit_button" type="submit" disabled="" data-testid="send-button">
+                    <span class="" data-state="closed">
+                        <img src="static/send-icon.svg" alt="SVG Image">
+                    </span>
+                </button>
+            </form>
+        </div>
         <script>
         window.scrollTo(0, document.body.scrollHeight);
         function showSpinner()

@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
-    <div class="include-container-vh">
         {% if conversations %}
-        <div class="responses response-item-collection">
+        <div class="response-item-collection">
             {% for conversation in conversations: %}
             {% include 'response_item.html' %}
             {% endfor %}
@@ -14,5 +13,4 @@
             <p>How can we assist you?</p>
         </div>
         {% endif %}
-    </div>
 </html>

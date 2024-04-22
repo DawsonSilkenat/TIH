@@ -22,30 +22,9 @@ with open("api_keys.json", "r") as file:
     model = keys["LLMModel"]
     max_tih_cache_age = keys["MaxCacheAgeTIHDataset"]
 
-#test data
-test = list[dict]()
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-test.append({'role': 'user', 'content': 'message'})
-#ai_conversation = test
-#view_conversation = ai_conversation
 
 # For now I am just going to store the conversation. This should be replaced eventually, but good enough for poc
-ai_conversation = [{}]
+ai_conversation = []
 view_conversation = []
 cache = JsonFileCache('places_cache.json', 'places_cache_requests.json')
 places_look_up = GooglePlacesLookup(google_api_key, cache)
