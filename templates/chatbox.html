@@ -1,6 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-    <body>
         <div class="content-area-chat-box">
             <form action="/" method="post" onsubmit="showSpinner()">
                 <input autocomplete="off" type="text" id="user_input" name="user_input" {% if user_query %}
@@ -11,26 +8,6 @@
                         <img src="static/send-icon.svg" alt="SVG Image">
                     </span>
                 </button>
+                <div id="loader" style="display:none;"></div>
             </form>
         </div>
-        <script>
-        window.scrollTo(0, document.body.scrollHeight);
-        function showSpinner()
-        {
-            document.getElementById("loader").style.display = "block";
-        }
-
-        function checkInputValue()
-        {
-            window.scrollTo(0, document.body.scrollHeight);
-            var userInput = document.getElementById('user_input').value;
-            var submitButton = document.getElementById('submit_button');
-            if (userInput.trim() !== '') {
-                submitButton.removeAttribute('disabled');
-            } else {
-                submitButton.setAttribute('disabled', '');
-            }
-        }
-    </script>
-    </body>
-</html>

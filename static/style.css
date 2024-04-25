@@ -35,6 +35,7 @@
 
             p {
                 margin: 5px 0;
+                word-wrap: break-word;
             }
 
             .round-img {
@@ -126,6 +127,7 @@
                 margin: 40px 10px;
                 display: flex;
                 overflow-y: auto;
+                overflow-x: hidden;
                 flex-direction: column;
                 flex: 1;
                 width: 100%;
@@ -133,9 +135,88 @@
                 scrollbar-width: thin;
             }
 
+			.recommendation-item {
+			    display: inline-block;
+				margin: 10px;
+				cursor: pointer;
+				max-width: 160px;
+				background: #ccc;
+				border-radius: 10px;
+			}
+
+            .recommendation-item-title
+            {
+                word-wrap: break-word;
+                text-align: center;
+                height: 50;
+                margin: 0;
+                padding: 5px;
+            }
+
+            .recommendation-item-price
+            {
+                text-align: center;
+                color: #555;
+                font-size: small;
+            }
+
+            .additional-info {
+                display: none;
+                margin: 10px 0 20px 0;
+            }
+
+            .additional-info-text-center {
+                display: flex;
+                text-align: center;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .additional-info-content
+            {
+            	hyphens: auto;
+	            text-align: justify;
+	            width: 90%;
+            }
+
+            .response-item {
+                margin: 0 0 25px 0;
+            }
+
+            .recommendation-image {
+                border-radius: 10px 10px 0 0;
+                width: 160px;
+            }
+
+
             .response-item-header {
             }
 
             .response-item-content {
+            }
+
+            #loader {
+              width: 20px;
+              height: 20px;
+              border: 8px solid #ccc;
+              border-radius: 50%;
+              border-top: 8px solid #777;
+              -webkit-animation: spin 2s linear infinite;
+              animation: spin 2s linear infinite;
+              padding: 10px;
+              margin: 10px 0 0 0;
+              box-sizing: border-box;
+              background-color: transparent;
+            }
+
+            @-webkit-keyframes spin {
+              0% { -webkit-transform: rotate(0deg); }
+              100% { -webkit-transform: rotate(360deg); }
+            }
+
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
             }
         </style>

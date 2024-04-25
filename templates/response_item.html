@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-    {% if 'content' in conversation %}
+    {% if 'content' in conversation or 'response_data' in conversation %}
     {% if conversation['role'] != 'tool' %}
-    <div>
+    <div class="response-item">
         {% if conversation['role'] == 'user' %}
         <div>
             {% include 'response_item_header_user.html' %}

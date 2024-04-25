@@ -50,4 +50,4 @@ def format_api_response(api_response: dict[str, any]) -> str:
     description = re.sub(regex, "", description)
     body = re.sub(regex, "", body)
     
-    return f"{name}\n{description}\n{body}\n{website}\n{address}\n{rating}"
+    return f"{name}\n{description}\n{body}"

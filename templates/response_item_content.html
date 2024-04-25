@@ -1,16 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-    <div class="response-item-content">
-        <pre class="pre-content">{{ conversation['content'] }}</pre>
-        <!--WIP <h3>{{ conversation['content']['title'] }}</h3>
-        <pre class="pre-content">{{ conversation['content']['description'] }}</pre>
-        <img src="{{ conversation['content']['image'] }}"/>
-        <div>999$</div>
-        <div>
-            Website: <a href="{{ conversation['content']['website'] }}"></a>
+        <div class="response-item-content">
+            {% if 'content' in conversation %}
+            <p class="pre-content">{{ conversation['content'] }}</p>
+            {% else %}
+            <p class="pre-content">{{ conversation['response_header'] }}</p>
+            {% for response_data in conversation['response_data'] %}
+            <div class="recommendation-item" onclick="showAdditionalInfo(event, this, {{ loop.index }})">
+                <img class="recommendation-image" src="{{ response_data['Image'] }}"/>
+                <h5 class="recommendation-item-title">{{ response_data['Title'] }}</h5>
+                <p class="recommendation-item-price">Starts from ${{ response_data['Price'] }}</p>
+            </div>
+            {% endfor %}
+            {% for response_data in conversation['response_data'] %}
+            <div id="{{ loop.index }}" class="additional-info">
+                <div class="additional-info-text-center">
+                    <h4 class="additional-info-content">
+                        {{ response_data['Description'] }}
+                    </h4>
+                    <p class="additional-info-content">
+                        {{ response_data['Content'] }}
+                    </p>
+                    <p class="additional-info-content">
+                        <span style="font-weight:bold;">Website:</span> <a href="{{ response_data['Website'] }}">{{ response_data['Website'] }}</a>
+                    </p>
+                    <p class="additional-info-content">
+                        <span style="font-weight:bold;">Address:</span> <a href="https://google.com/maps/search/{{ response_data['Address'] | replace(' ', '%20') }}">{{ response_data['Address'] }}</a>
+                    </p>
+                    {%  if response_data['Rating'] > 1 %}
+                    <p class="additional-info-content">
+                        <span style="font-weight:bold;">Rating:</span> {{ response_data['Rating'] }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            <p class="pre-content">{{ conversation['response_footer'] }}</p>
+            {% endif %}
         </div>
-        <div>
-            Rating: {{ conversation['content']['rating'] }}
-        </div>
-    </div>-->
-</html>

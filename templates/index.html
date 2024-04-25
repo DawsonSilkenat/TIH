@@ -1,12 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="overflow=hidden;">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>TIH LLM POC</title>
-        {% include 'style.css' %}
+        <link rel="stylesheet" href="static/style.css">
+        <script>
+            function OnLoaded()
+			{
+				let objDiv = document.getElementsByClassName("response-item-collection")[0];
+				if (objDiv != null)
+				{
+					objDiv.scrollTop = objDiv.scrollHeight;
+				}
+			}
+
+            function hideAllAdditionalInfo()
+            {
+                let infoDiv = document.getElementsByClassName('additional-info');
+                for (var i = 0; i < infoDiv.length; i++)
+                {
+                    infoDiv[i].style.display = 'none';
+                }
+
+				let infoDiv1 = document.getElementsByClassName('recommendation-item');
+                for (var i = 0; i < infoDiv1.length; i++)
+                {
+                    infoDiv1[i].style.background = '#ccc';
+                }
+            }
+
+            function showAdditionalInfo(event, that, id)
+            {
+                let wrapper = document.getElementById(id);
+				let prevDisplayStyle = wrapper.style.display;
+				let prevColor = that.style.background
+				hideAllAdditionalInfo();
+
+				if (prevColor != 'orange')
+				{
+					that.style.background = 'orange';
+				}
+
+				if (prevDisplayStyle != 'block')
+				{
+					wrapper.style.display = 'block';
+				}
+
+				OnLoaded();
+            }
+
+            function showSpinner()
+            {
+                document.getElementById("loader").style.display = "block";
+                document.getElementById("submit_button").style.display = "none";
+            }
+
+            function checkInputValue()
+            {
+                var userInput = document.getElementById('user_input').value;
+                var submitButton = document.getElementById('submit_button');
+                if (userInput.trim() !== '') {
+                    submitButton.removeAttribute('disabled');
+                } else {
+                    submitButton.setAttribute('disabled', '');
+                }
+            }
+        </script>
     </head>
-    <body>
+    <body style="overflow: hidden;" onload="OnLoaded();">
         <div class="template-container">
             <div class="sidebar-container">
                 {% include 'sidebar.html' %}
