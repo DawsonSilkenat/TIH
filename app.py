@@ -14,6 +14,7 @@ with open("api_keys.json", "r") as file:
     openai_api_key = keys["OpenAI"]
     os.environ["OPENAI_API_KEY"] = openai_api_key
     model = keys["LLMModel"]
+    download_images = keys['download_places_image']
     max_tih_cache_age = keys["MaxCacheAgeTIHDataset"]
 
 
@@ -31,15 +32,14 @@ from datetime import datetime
 ai_conversation = []
 view_conversation = []
 cache = JsonFileCache('places_cache.json', 'places_cache_requests.json')
-places_look_up = GooglePlacesLookup(google_api_key, cache)
+places_look_up = GooglePlacesLookup(google_api_key, cache, download_images)
 tih_api = TIHAPI(tih_api_key, places_look_up, "tih_datasets_cache.json", max_tih_cache_age)
 llm = OpenAILLMQueries(openai_api_key, model)
 
 
 def append_to_conversation(data: dict):
     ai_conversation.append(data)
-    #if data['role'] != 'tool' and 'content' in data:
-    #    view_conversation.append(data)
+    view_conversation.append(data)
 
 
 def collect_data_and_respond():
@@ -49,28 +49,32 @@ def collect_data_and_respond():
         llm_answer = api_response.response_text.replace("**", "")
         append_to_conversation({"role": "assistant", "content": llm_answer})
     else:
-        datasets = tih_api.get_datasets()
-        datasets = llm.filter_datasets(ai_conversation, datasets)
-        print(f"selected datasets: {datasets}")
-        keywords = llm.get_query_keywords(ai_conversation)
-        print(f"keywords: {keywords}")
-        print(api_response.response_function_arguments)
-        start_date = datetime.strptime(api_response.response_function_arguments["tripStartDate"], '%Y-%m-%d')
-        end_date = datetime.strptime(api_response.response_function_arguments["tripEndDate"], '%Y-%m-%d')
-        dk_api_responses_raw = tih_api.multiple_datasets_by_keywords(datasets, keywords, 25, start_date, end_date)
-        dk_api_responses = [format_api_response(response) for response in dk_api_responses_raw]
-        if len(dk_api_responses) == 0:
-            print("No data found LLM will response on it's own")
-            dk_api_responses = ["Sorry, I was unable to find suitable results."]
-        else:
-            print(f"dk_api_responses: {dk_api_responses}")
+        create_recommendation_response(api_response)
 
-        tool_responses = format_results(dk_api_responses_raw)
-        append_to_conversation({"role": "assistant", "tool_calls": api_response.response_tool_data})
-        append_to_conversation({"role": "tool", "tool_call_id": api_response.response_tool_id, "content": "\n\n".join(dk_api_responses)})
-        print(ai_conversation)
-        create_response_from_tool_data(tool_responses)
-        # collect_data_and_respond()
+
+def create_recommendation_response(api_response):
+    datasets = tih_api.get_datasets()
+    datasets = llm.filter_datasets(ai_conversation, datasets)
+    print(f"selected datasets: {datasets}")
+    keywords = llm.get_query_keywords(ai_conversation)
+    print(f"keywords: {keywords}")
+    print(api_response.response_function_arguments)
+    start_date = datetime.strptime(api_response.response_function_arguments["tripStartDate"], '%Y-%m-%d')
+    end_date = datetime.strptime(api_response.response_function_arguments["tripEndDate"], '%Y-%m-%d')
+    dk_api_responses_raw = tih_api.multiple_datasets_by_keywords(datasets, keywords, 25, start_date, end_date)
+    dk_api_responses = [format_api_response(response) for response in dk_api_responses_raw]
+    if len(dk_api_responses) == 0:
+        print("No data found LLM will response on it's own")
+        dk_api_responses = ["Sorry, I was unable to find suitable results."]
+    else:
+        print(f"dk_api_responses: {dk_api_responses}")
+
+    tool_responses = format_results(dk_api_responses_raw)
+    append_to_conversation({"role": "assistant", "tool_calls": api_response.response_tool_data})
+    append_to_conversation(
+        {"role": "tool", "tool_call_id": api_response.response_tool_id, "content": "\n\n".join(dk_api_responses)})
+    print(ai_conversation)
+    create_response_from_tool_data(tool_responses)
 
 
 def create_response_from_tool_data(tool_responses):
@@ -90,7 +94,8 @@ def create_response_from_tool_data(tool_responses):
         data["response_footer"] = answer_parts[len(answer_parts) - 1]
         data["response_data"] = selected_responses
         print(f"final tool response: {data}")
-        append_to_conversation(data)
+        ai_conversation.append({'role': "assistant", 'content': llm_answer})
+        view_conversation.append(data)
 
 
 def get_cleaned_selection(answer_parts: list[str]) -> list[str]:
@@ -127,13 +132,23 @@ def format_results(api_responses):
 
 def format_result(api_response):
     response = dict()
+    response['Id'] = api_response['uuid']
     response['Title'] = clean_text(api_response['name'])
     response['Description'] = clean_text(api_response['description'])
     response['Content'] = clean_text(api_response['body'])
     response['Website'] = api_response['officialWebsite']
     response['Address'] = f"{api_response['address']['block']} {api_response['address']['streetName']}, Singapore {api_response['address']['postalCode']}".strip()
     response['Rating'] = api_response['rating']
-    response['Image'] = 'static/hotel.png'
+    if 'google_data' in api_response:
+        image_path = f"static/image_cache/{api_response['google_data']['place_id']}"
+        if os.path.exists(image_path):
+            response['Image'] = image_path
+        else:
+            # random fallback image :)
+            response['Image'] = f"static/image_cache/ChIJzXNvOzcY2jERZ6JJC0ab_qg"
+    else:
+        response['Image'] = f"static/image_cache/ChIJzXNvOzcY2jERZ6JJC0ab_qg"
+
     response['Price'] = '999'
     return response
 
@@ -146,26 +161,6 @@ def clean_text(text):
     return re.sub(regex, "", text)
 
 
-@app.route("/index.html", methods=["GET", "POST"])
-def handle_query_index():
-    return render_template("index.html", conversations=ai_conversation)
-
-
-@app.route("/sidebar.html", methods=["GET", "POST"])
-def handle_query_sidebar():
-    return render_template("sidebar.html")
-
-
-@app.route("/response_view.html", methods=["GET", "POST"])
-def handle_query_response_view():
-    return render_template("response_view.html")
-
-
-@app.route("/chatbox.html", methods=["GET", "POST"])
-def handle_query_chatbox():
-    return render_template("chatbox.html")
-
-
 @app.route("/", methods=["GET", "POST"])
 def handle_query_other():
     if request.method == "POST":
@@ -173,7 +168,7 @@ def handle_query_other():
         append_to_conversation({"role": "user", "content": user_query})
         collect_data_and_respond()
 
-    return render_template("index.html", conversations=ai_conversation)
+    return render_template("index.html", conversations=view_conversation)
 
 
 @app.route("/reset", methods=["GET"])
@@ -183,7 +178,7 @@ def handle_reset():
     ai_conversation = []
     view_conversation = []
 
-    return render_template("demo_page.html", conversations=ai_conversation)
+    return render_template("index.html", conversations=view_conversation)
 
 
 if __name__ == "__main__":

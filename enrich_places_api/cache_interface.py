@@ -8,5 +8,11 @@ class ICache:
     def write_to_cache(self, results: list[dict]):
         pass
 
+    def write_place_details(self, place_id: str, data: dict):
+        pass
+
     def load_cache(self):
+        pass
+
+    def get_all(self) -> list[dict]:
         pass

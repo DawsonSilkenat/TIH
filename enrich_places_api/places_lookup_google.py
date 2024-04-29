@@ -4,10 +4,13 @@ import time
 from enrich_places_api.cache_interface import ICache
 from enrich_places_api.places_lookup_interface import IPlacesLookup
 from difflib import SequenceMatcher
+import os
+import asyncio
 
 
 class GooglePlacesLookup(IPlacesLookup):
-    def __init__(self, api_key, cache: ICache):
+    def __init__(self, api_key, cache: ICache, download_images: bool = True):
+        self.download_images = download_images
         self._cache = cache
         self._cache.load_cache()
         if api_key and not api_key.isspace():
@@ -22,9 +25,11 @@ class GooglePlacesLookup(IPlacesLookup):
             #print(f"data collected from cache: {results}")
             found_place = self._filter_place(place, block, street_name, results)
             if found_place is not None:
+                self._check_for_image(found_place['place_id'])
                 return found_place
 
         if already_searched:
+            print(f"{place} not found in cache and was already searched.")
             #TODO check cache age and invalidate, if to old query google again (code below)
             return None
 
@@ -35,6 +40,23 @@ class GooglePlacesLookup(IPlacesLookup):
         print("Data not found in caching retrieving data from google...")
         results = self._collect_data(place, latitude, longitude)
         return self._filter_place(place, block, street_name, results)
+
+    def _get_place_details(self, place_id):
+        return self._client.place(place_id)
+
+    def _check_for_image(self, place_id):
+        if self.download_images:
+            if not os.path.exists(f"static/image_cache/{place_id}"):
+                details = self._get_place_details(place_id)['result']
+                self._cache.write_place_details(place_id, details)
+                self._collect_images([details])
+
+    def _cache_image(self, place_id, image_reference):
+        if not os.path.exists(f"static/image_cache/{place_id}"):
+            result = self._client.places_photo(image_reference, 6000, 6000)
+            with open(f"static/image_cache/{place_id}", 'wb') as file:
+                for a in result:
+                    file.write(a)
 
     def _filter_place(self, place: str, block: str, street_name: str, results: list[dict]) -> dict | None:
         for result in results:
@@ -92,7 +114,7 @@ class GooglePlacesLookup(IPlacesLookup):
             similarity_street = SequenceMatcher(None, google_street_name, tih_street_name).ratio()
 
             # 0.8 magic ratio I don't if is a good choice or not.
-            if similarity_street < 0.8:
+            if similarity_street < 0.65:
                 # print(f"street name do not match: google={google_street_name}, tih={tih_street_name}")
                 # print(f"street similarity ratio: {similarity_street}")
                 return True
@@ -118,10 +140,27 @@ class GooglePlacesLookup(IPlacesLookup):
                                             page_token=next_page)
         results = places_result['results']
         self._cache.write_to_cache(results)
+
         if 'next_page_token' in places_result:
             # The token becomes valid after an unspecified delay. 2 seconds seem to work reliable
             # for more information see: https://developers.google.com/maps/documentation/places/web-service/search-text
             time.sleep(2)
             results.extend(self._collect_data(place, latitude, longitude, places_result['next_page_token']))
 
+        #asyncio.ensure_future(self._collect_images(results))
+        self._collect_images(results)
         return results
+
+    def _collect_images(self, results):
+        if self.download_images:
+            for result in results:
+                if 'photos' in result and len(result['photos']) > 0:
+                    self._cache_image(result['place_id'], result['photos'][0]['photo_reference'])
+                    print(f"photo cached {result['place_id']}")
+                else:
+                    print(result)
+
+    def _refresh_cache(self):
+        cached_items = self._cache.get_all()
+        for item in cached_items[::100]:
+            self._check_for_image(item['place_id'])

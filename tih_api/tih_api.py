@@ -15,22 +15,25 @@ class TIHAPI:
         self._hidden_gem_dataset_type_filter = ['food_beverages', 'bars_clubs', 'shops', 'attractions']
         self._read_dataset_cache()
 
-
     def multiple_datasets_by_keywords(self, datasets: list[str], keywords: list[str], limit: int,
                                       start_date: datetime, end_date: datetime, expected_result_count: int = 10)\
             -> list[dict[str, any]]:
         valid_responses = list[dict[str, any]]()
 
         offset = 0
-        enrich_data = any(item in datasets for item in self._hidden_gem_dataset_type_filter)
+        needs_hidden_gem_filter = any(item in datasets for item in self._hidden_gem_dataset_type_filter)
         while len(valid_responses) < expected_result_count:
             api_response = self._request_from_api(datasets, keywords, limit, offset, start_date, end_date)
+            self._enrich_with_google_data(api_response)
 
-            # if we don't need to enrich the data just return the tih data.
-            if not enrich_data:
-                return api_response
+            # if we don't need to apply the hidden gem filter the data just return the data.
+            if not needs_hidden_gem_filter:
+                for item in api_response:
+                    if 'google_data' in item:
+                        valid_responses.append(item)
+            else:
+                self._check_for_hidden_gems(api_response, valid_responses, expected_result_count)
 
-            self._check_for_hidden_gems(api_response, valid_responses, expected_result_count)
             if len(api_response) < limit:
                 return valid_responses
 
@@ -50,21 +53,12 @@ class TIHAPI:
 
     def _check_for_hidden_gems(self, api_response: list[dict[str, any]], valid_responses: list[dict[str, any]],
                                expected_result_count: int):
-        start = time.time()
         for item in api_response:
-            block, street = self._get_tih_address_data(item)
-            if self._is_matching_google_rating_filter(item['name'], block, street,
-                                                      float(item['location']['latitude']),
-                                                      float(item['location']['longitude'])):
+            if self._is_matching_google_rating_filter(item):
                 print(f"hidden gem :{item['name']}")
                 valid_responses.append(item)
                 if len(valid_responses) >= expected_result_count:
-                    end = time.time()
-                    print(f"Hidden gem check took {end - start} seconds")
                     return valid_responses
-
-        end = time.time()
-        print(f"Hidden gem check took {end - start} seconds")
 
     def _get_tih_address_data(self, item) -> (str, str):
         if len(item['address']['block'].strip()) == 0:
@@ -96,23 +90,34 @@ class TIHAPI:
             return response.json().get("data")
         response.raise_for_status()
 
-    def _is_matching_google_rating_filter(self, name: str, block: str, street_name: str, latitude: float,
-                                          longitude: float, max_rating_count: int = 500, minimum_rating: float = 3.0):
-        # ignore restaurant that have not a valid location
-        if float(latitude) == 0.0 and float(longitude) == 0.0:
+    def _is_matching_google_rating_filter(self, item, max_rating_count: int = 500, minimum_rating: float = 3.0):
+        if 'google_data' not in item:
             return False
 
-        #print(f"check google or cache for: {name} {block} {latitude} {longitude}")
-        google_place_result = self._places.find_place(name, block, street_name, latitude, longitude)
-        if google_place_result is not None:
-            rating_count = google_place_result['user_ratings_total']
-            rating = google_place_result['rating']
-            operational = google_place_result['business_status'] == 'OPERATIONAL'
-            return (operational and rating_count < max_rating_count and rating >= minimum_rating) or rating_count <= 10
-        else:
-            print(f"Resturant {name}, {block}, {street_name}, {latitude}, {longitude} couldn't be found")
+        google_place_result = item['google_data']
+        rating_count = google_place_result['user_ratings_total']
+        rating = google_place_result['rating']
+        operational = google_place_result['business_status'] == 'OPERATIONAL'
+        return (operational and rating_count < max_rating_count and rating >= minimum_rating) or rating_count <= 10
 
-        return False
+    def _enrich_with_google_data(self, api_response):
+        start = time.time()
+        for item in api_response:
+            block, street = self._get_tih_address_data(item)
+            google_data = self._enrich_data(item['name'], block, street, float(item['location']['latitude']),
+                                            float(item['location']['longitude']))
+            if google_data is not None:
+                item['google_data'] = google_data
+
+        end = time.time()
+        print(f"Enriching with google data took {end - start} seconds")
+
+    def _enrich_data(self, name: str, block: str, street_name: str, latitude: float, longitude: float):
+        if float(latitude) == 0.0 and float(longitude) == 0.0:
+            print(f"{name} has a invalid geo location in tih.")
+            return None
+
+        return self._places.find_place(name, block, street_name, latitude, longitude)
 
     def _request_from_api(self, datasets: list[str], keywords: list[str], limit: int, offset: int,
                           start_date: datetime, end_date: datetime, offset_days: int = 5) -> list[dict[str, any]]:

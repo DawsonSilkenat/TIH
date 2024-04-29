@@ -3,6 +3,7 @@ import json
 import hashlib
 from math import radians, cos, sin, asin, sqrt
 from datetime import datetime
+import os
 
 
 class JsonFileCache(ICache):
@@ -12,6 +13,13 @@ class JsonFileCache(ICache):
         self._cache = list[dict]()
         self._cache_set = dict()
         self._cache_requests = set()
+        if not os.path.exists(file_path):
+            with open(file_path, 'w') as file:
+                file.write("{}")
+
+        if not os.path.exists(file_path_cache_requests):
+            with open(file_path_cache_requests, 'w') as file2:
+                file2.write("{}")
 
     def is_request_in_cache(self, latitude: float, longitude: float) -> bool:
         return self._is_request_in_cache(latitude, longitude, False)
@@ -42,11 +50,14 @@ class JsonFileCache(ICache):
         for item in self._cache:
             item['cachedAt'] = datetime.today().strftime("%d-%m-%y %H:%M:%S")
 
-        cache_obj = {'cache_data': self._cache}
-        json_object = json.dumps(cache_obj, indent=4)
-        print(f"write to cache: total items={len(self._cache)}, added={added}, ignored={len(results)-added}")
-        with open(self._file_path, "w") as outfile:
-            outfile.write(json_object)
+        print(f"write to cache: total items={len(self._cache)}, added={added}, updated={len(results)-added}")
+        self._write_cache()
+
+    def write_place_details(self, place_id: str, data: dict):
+        index = self._cache_set[place_id]
+        self._cache[index]['details_request_data'] = data
+        print(f"Cached place details.")
+        self._write_cache()
 
     def load_cache(self):
         with open(self._file_path, "r") as file:
@@ -65,6 +76,15 @@ class JsonFileCache(ICache):
             print(f"cache loaded: {len(self._cache)}")
 
         self._load_cache_requests()
+
+    def get_all(self) -> list[dict]:
+        return self._cache
+
+    def _write_cache(self):
+        cache_obj = {'cache_data': self._cache}
+        json_object = json.dumps(cache_obj, indent=4)
+        with open(self._file_path, "w") as outfile:
+            outfile.write(json_object)
 
     def _get_distance(self, lat1: float, lng1: float, lat2: float, lng2: float) -> float:
         lng1, lat1, lng2, lat2 = map(radians, [lng1, lat1, lng2, lat2])

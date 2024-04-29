@@ -4,14 +4,14 @@
             {% else %}
             <p class="pre-content">{{ conversation['response_header'] }}</p>
             {% for response_data in conversation['response_data'] %}
-            <div class="recommendation-item" onclick="showAdditionalInfo(event, this, {{ loop.index }})">
+            <div class="recommendation-item" onclick="showAdditionalInfo(event, this, '{{ response_data['Id'] }}')">
                 <img class="recommendation-image" src="{{ response_data['Image'] }}"/>
                 <h5 class="recommendation-item-title">{{ response_data['Title'] }}</h5>
                 <p class="recommendation-item-price">Starts from ${{ response_data['Price'] }}</p>
             </div>
             {% endfor %}
             {% for response_data in conversation['response_data'] %}
-            <div id="{{ loop.index }}" class="additional-info">
+            <div id="{{ response_data['Id'] }}" class="additional-info">
                 <div class="additional-info-text-center">
                     <h4 class="additional-info-content">
                         {{ response_data['Description'] }}

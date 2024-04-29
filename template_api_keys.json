@@ -1,0 +1,8 @@
+{
+    "TIH" : "",
+    "OpenAI" : "",
+    "GoogleAPI": "",
+    "LLMModel": "gpt-4-turbo",
+    "MaxCacheAgeTIHDataset": 60000,
+    "download_places_image": true
+}
