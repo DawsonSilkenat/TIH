@@ -6,15 +6,14 @@
         {% if conversation['role'] == 'user' %}
         <div>
             {% include 'response_item_header_user.html' %}
+            {% include 'response_item_content_user.html' %}
         </div>
         {% else %}
         <div>
             {% include 'response_item_header_llm.html' %}
+            {% include 'response_item_content_llm.html' %}
         </div>
         {% endif %}
-        <div>
-            {% include 'response_item_content.html' %}
-        </div>
     </div>
     {% endif %}
     {% endif %}

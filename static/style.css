@@ -190,11 +190,19 @@
                 height: 90px;
             }
 
-
             .response-item-header {
             }
 
-            .response-item-content {
+            .response-item-content-llm {
+                background: #ccc;
+                border-radius: 10px;
+                padding: 10px;
+            }
+
+            .response-item-content-user {
+                background: lime;
+                border-radius: 10px;
+                padding: 10px;
             }
 
             #loader {
