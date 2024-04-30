@@ -2,12 +2,15 @@
         <div class="response-item-collection">
             {% for conversation in conversations: %}
             {% include 'response_item.html' %}
+            {% if not loop.last  %}
+            <hr class="response-divider">
+            {% endif %}
             {% endfor %}
         </div>
         {% else %}
         <div class="chat-content-initial-state">
             <img src="static/sg-flag.svg" alt="SVG Image">
-            <p>Start travelling to Singapore!</p>
-            <p>How can we assist you?</p>
+            <p class="initial-chat-question">Start travelling to Singapore!</p>
+            <p class="initial-chat-question">How can we assist you?</p>
         </div>
         {% endif %}

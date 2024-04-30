@@ -1,4 +1,8 @@
         <style>
+            html *
+            {
+                font-family: Arial !important;
+            }
             body, html {
                 margin: 0;
                 padding: 0;
@@ -63,6 +67,11 @@
                 flex: 1;
             }
 
+            .initial-chat-question
+            {
+                font-size: 28px;
+            }
+
             .sidebar {
                 display: flex;
                 flex-direction: column;
@@ -83,6 +92,7 @@
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
+                background: #efeef4;
             }
 
             .content-view {
@@ -194,15 +204,18 @@
             }
 
             .response-item-content-llm {
-                background: #ccc;
-                border-radius: 10px;
-                padding: 10px;
             }
 
             .response-item-content-user {
-                background: lime;
-                border-radius: 10px;
-                padding: 10px;
+            }
+
+            .response-divider {
+                height: 2px;
+                color: #B2ACBD;
+                background-color: #B2ACBD;
+                width: 100%;
+                border-width:0;
+                margin: 0 0 30px 0;
             }
 
             #loader {
