@@ -43,22 +43,23 @@ class OpenAILLMQueries(ILLMQueries):
             return LLMResponse(LLMResponseType.TEXT, response.choices[0].message.content, "", "", dict(), list())
 
     def collect_user_data(self, conversation: list[dict[str, str]]) -> LLMResponse:
+        # You are a helpful tourist assistant for Singapore.
         system_prompt = """
-        You are a helpful tourist assistant for Singapore. Every question the user makes relates to visiting singapore. 
-        In order to help someone to find the right spot to visit for a 
-        given topic you need the start and end date when they visiting Singapore.
-        Weather the person visiting as individual or group. 
+        You help a tourism agency provide personalised recommendations to clients for their trip to Singapore. 
+        Every question the user makes relates to a customer visiting singapore. 
+        In order to help someone to find the right spot to visit for a given topic you need: 
+        The start and end date when they visiting Singapore. Note that the current year is 2024
+        Whether the person visiting as individual or group. 
         For an individual- just ask the age of the person. 
-        If It is for a group - we need to know how many people are on it and what there ages are for each person. 
-        If the group contains people below 16 year old the recommendation must be children friendly.
+        If it is for a group - we need to know how many people are on it and what their ages are for each person. 
+        If the group contains people below 16 year old the recommendation must be child friendly.
         Only ask one question at the time.
     
-        Only when you have collect the following information Topic, Individual or group, children friendly or not,
+        Only when you have collect the following information: Topic, Individual or group, children friendly or not,
         reason for the visit, trip start and end date and topic related preferences,
         you can call the function getRecommendations.
     
-        If you retrieved the list of recommendations from the function 
-        select up to 5 recommendations that best matches the provided user preferences.
+        If you retrieved the list of recommendations from the function select up to 5 recommendations that best matches the provided user preferences.
         Between each recommendation item a line break needs to be inserted.
         Format the recommendations as plain text. 
         Remove any markdown formatting
